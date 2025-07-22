@@ -7,6 +7,8 @@
     font-style: normal;
 }
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --font-sans: "Plus Jakarta Sans", "sans-serif";
 
