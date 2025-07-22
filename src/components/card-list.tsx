@@ -12,7 +12,7 @@ export default function CardList() {
       </div>
       <div className={"flex w-[280px] flex-col gap-y-5 pt-6"}>
         {todoData.boards[0].columns[0].tasks.map((task, idx) => (
-          <Card key={idx} title={task.title} description={task.description} subTasks={task.subtasks} />
+          <Card key={idx} title={task.title} subTasks={task.subtasks} />
         ))}
       </div>
     </div>
