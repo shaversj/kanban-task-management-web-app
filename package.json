@@ -10,6 +10,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@atlaskit/pragmatic-drag-and-drop": "^1.7.4",
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.1.0",
     "@headlessui/react": "^2.2.4",
     "@tailwindcss/vite": "^4.0.6",
     "@tanstack/react-router": "^1.121.2",

@@ -6,7 +6,7 @@ import iconShowSidebar from "../assets/images/icon-show-sidebar.svg";
 import iconHideSidebar from "../assets/images/icon-hide-sidebar.svg";
 import { useState } from "react";
 import { Switch } from "@headlessui/react";
-import CardList from "@/components/card-list.tsx";
+import Board from "@/components/board.tsx";
 
 export const Route = createFileRoute("/")({
   component: App,
@@ -121,9 +121,14 @@ function App() {
           </div>
         </div>
 
-        <div className={"col-start-2 row-start-2 bg-[#f4f7fd] dark:bg-[#20212c]"}>
-          <CardList />
-        </div>
+        {/*<div className={"col-start-2 row-start-2 flex gap-x-6 bg-[#f4f7fd] px-6 dark:bg-[#20212c]"}>*/}
+        {/*  {todoData.boards[0].columns.map((column) => (*/}
+        {/*    <Column key={column.id} columnData={column} />*/}
+        {/*  ))}*/}
+        {/*  */}
+        {/*</div>*/}
+
+        <Board />
       </main>
     </div>
   );
