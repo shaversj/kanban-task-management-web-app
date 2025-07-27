@@ -9,32 +9,92 @@ import todoData from "@/data/new_data.json";
 export default function Board() {
   const [columnsData, setColumnsData] = useState(todoData.boards[0].columns);
 
-  const reorderCard = useCallback(
-    ({ columnId, startIndex, finishIndex }) => {
+  const moveCard = useCallback(
+    ({
+      movedCardIndexInSourceColumn,
+      sourceColumnId,
+      destinationColumnId,
+      movedCardIndexInDestinationColumn,
+    }: {
+      movedCardIndexInSourceColumn: number;
+      sourceColumnId: string;
+      destinationColumnId: string;
+      movedCardIndexInDestinationColumn: number;
+    }) => {
       setColumnsData((prevColumns) => {
-        const sourceColumn = prevColumns.find((column) => column.id === columnId);
-        if (!sourceColumn) return prevColumns; // fallback if not found
+        const sourceColumn = prevColumns.find((column) => column.id === sourceColumnId);
+        const destinationColumn = prevColumns.find((column) => column.id === destinationColumnId);
 
-        const updatedTasks = reorder({
-          list: sourceColumn.tasks,
-          startIndex,
-          finishIndex,
+        if (!sourceColumn || !destinationColumn) {
+          console.warn("Invalid column ID(s):", { sourceColumnId, destinationColumnId });
+          return prevColumns;
+        }
+
+        const cardToMove = sourceColumn.tasks?.[movedCardIndexInSourceColumn];
+        if (!cardToMove) {
+          console.warn("Card not found at source index:", movedCardIndexInSourceColumn);
+          return prevColumns;
+        }
+
+        // Remove card from source column
+        const updatedSourceCards = sourceColumn.tasks.filter((_card, i) => i !== movedCardIndexInSourceColumn);
+
+        // Insert card into destination column
+        const updatedDestinationCards = [...destinationColumn.tasks];
+        const insertIndex = movedCardIndexInDestinationColumn ?? 0;
+        updatedDestinationCards.splice(insertIndex, 0, cardToMove);
+
+        return prevColumns.map((column) => {
+          if (column.id === sourceColumnId) {
+            return {
+              ...column,
+              tasks: updatedSourceCards,
+            };
+          }
+
+          if (column.id === destinationColumnId) {
+            return {
+              ...column,
+              tasks: updatedDestinationCards,
+            };
+          }
+
+          return column;
         });
-
-        const updatedColumn = {
-          ...sourceColumn,
-          tasks: updatedTasks,
-        };
-
-        return prevColumns.map((column) => (column.id === columnId ? updatedColumn : column));
       });
     },
-    [], // ✅ no dependency on columnsData
+    [],
   );
+
+  const reorderCard = useCallback(({ columnId, startIndex, finishIndex }: { columnId: string; startIndex: number; finishIndex: number }) => {
+    setColumnsData((prevColumns) => {
+      const sourceColumn = prevColumns.find((column) => column.id === columnId);
+      if (!sourceColumn) return prevColumns; // fallback if not found
+
+      const updatedTasks = reorder({
+        list: sourceColumn.tasks,
+        startIndex,
+        finishIndex,
+      });
+
+      const updatedColumn = {
+        ...sourceColumn,
+        tasks: updatedTasks,
+      };
+
+      return prevColumns.map((column) => (column.id === columnId ? updatedColumn : column));
+    });
+  }, []);
 
   // Function to handle drop events
   const handleDrop = useCallback(
-    ({ source, location }) => {
+    ({
+      source,
+      location,
+    }: {
+      source: { data: Record<string, unknown> };
+      location: { current: { dropTargets: any[] }; initial: { dropTargets: any[] } };
+    }) => {
       // Early return if there are no drop targets in the current location
       const destination = location.current.dropTargets.length;
       if (!destination) {
@@ -44,7 +104,6 @@ export default function Board() {
       if (source.data.type === "card") {
         // Retrieve the ID of the card being dragged
         const draggedCardId = source.data.taskId;
-        console.log("handleDrop-draggedCardId", source);
         // Get the source column from the initial drop targets
         const [, sourceColumnRecord] = location.initial.dropTargets;
 
@@ -55,10 +114,9 @@ export default function Board() {
         const sourceColumnData = columnsData.find((column) => column.id === sourceColumnId);
 
         // Get the index of the card being dragged in the source column
-        const draggedCardIndex = sourceColumnData.tasks.findIndex((task) => task.id === draggedCardId);
+        const draggedCardIndex = sourceColumnData?.tasks.findIndex((task) => task.id === draggedCardId) ?? -1;
 
         if (location.current.dropTargets.length === 2) {
-          console.log("handleDrop", location.current.dropTargets);
           // Destructure and extract the destination card and column data from the drop targets
           const [destinationCardRecord, destinationColumnRecord] = location.current.dropTargets;
 
@@ -69,8 +127,7 @@ export default function Board() {
           const destinationColumn = columnsData.find((column) => column.id === destinationColumnId);
 
           // Find the index of the target card within the destination column's cards
-          const indexOfTarget = destinationColumn.tasks.findIndex((card) => card.id === destinationCardRecord.data.cardId);
-
+          const indexOfTarget = destinationColumn?.tasks.findIndex((card) => card.id === destinationCardRecord.data.cardId) ?? -1;
           // Determine the closest edge of the target card: top or bottom
           const closestEdgeOfTarget = extractClosestEdge(destinationCardRecord.data);
 
@@ -93,13 +150,22 @@ export default function Board() {
 
             return;
           }
+
+          const destinationIndex = closestEdgeOfTarget === "bottom" ? indexOfTarget + 1 : indexOfTarget;
+
+          moveCard({
+            movedCardIndexInSourceColumn: draggedCardIndex,
+            sourceColumnId,
+            destinationColumnId,
+            movedCardIndexInDestinationColumn: destinationIndex,
+          });
         }
       }
     },
-    [columnsData, reorderCard],
+    [columnsData, reorderCard, moveCard],
   );
 
-  // setup the monitor
+  // set up the monitor
   useEffect(() => {
     return monitorForElements({
       onDrop: handleDrop,

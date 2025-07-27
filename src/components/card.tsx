@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import invariant from "tiny-invariant";
 import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-import { attachClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
+import { attachClosestEdge, extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
+import DropIndicator from "@/components/drop-indicator.tsx";
+import type { Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 
 type CardProps = {
   task: {
@@ -21,6 +23,7 @@ type CardProps = {
 export default function Card({ task }: CardProps) {
   const cardRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [closestEdge, setClosestEdge] = useState<Edge | null>(null);
 
   const getCompletedSubTasks = () => {
     return task?.subtasks?.filter((subtask) => subtask.isCompleted).length;
@@ -55,16 +58,31 @@ export default function Card({ task }: CardProps) {
         },
         getIsSticky: () => true, // To make a drop target "sticky"
         onDragEnter: (args) => {
-          if (args.source.data.id !== task.id) {
-            console.log("onDragEnter", args);
+          // Update the closest edge when a draggable item enters the drop zone
+          if (args.source.data.taskId !== task.id) {
+            setClosestEdge(extractClosestEdge(args.self.data));
           }
+        },
+        onDrag: (args) => {
+          // Continuously update the closest edge while dragging over the drop zone
+          if (args.source.data.taskId !== task.id) {
+            setClosestEdge(extractClosestEdge(args.self.data));
+          }
+        },
+        onDragLeave: () => {
+          // Reset the closest edge when the draggable item leaves the drop zone
+          setClosestEdge(null);
+        },
+        onDrop: () => {
+          // Reset the closest edge when the draggable item is dropped
+          setClosestEdge(null);
         },
       }),
     );
   }, []);
 
   return (
-    <div ref={cardRef} data-swapy-slot={task?.title}>
+    <div ref={cardRef} className="relative">
       <div
         data-swapy-item={task?.title}
         className={`dark:bg-dark-grey rounded-lg bg-white px-4 py-6 shadow-[0px_4px_6px_rgba(54,78,126,0.101545)] hover:opacity-50 ${isDragging ? "opacity-50" : "opacity-100"}`}
@@ -76,6 +94,7 @@ export default function Card({ task }: CardProps) {
           </p>
         </div>
       </div>
+      {closestEdge && <DropIndicator edge={closestEdge} />}
     </div>
   );
 }
