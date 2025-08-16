@@ -7,6 +7,7 @@ import iconHideSidebar from "../assets/images/icon-hide-sidebar.svg";
 import { useState } from "react";
 import { Switch } from "@headlessui/react";
 import Board from "@/components/board.tsx";
+import FullTask from "@/components/full-task.tsx";
 
 export const Route = createFileRoute("/")({
   component: App,
@@ -128,7 +129,9 @@ function App() {
         {/*  */}
         {/*</div>*/}
 
-        <Board />
+        {/*<Board />*/}
+
+        <FullTask />
       </main>
     </div>
   );
